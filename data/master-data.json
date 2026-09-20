@@ -1,6 +1,14 @@
 {
-  "actualizadoEm": "2026-09-20T16:30:04.0021059Z",
+  "actualizadoEm": "2026-09-20T16:35:02.7391246Z",
   "viaturas": [
+    {
+      "codigo": "AOT 434 MC",
+      "estado": ""
+    },
+    {
+      "codigo": "AOT 435 MC",
+      "estado": ""
+    },
     {
       "codigo": "AOT 436 MC",
       "estado": ""
