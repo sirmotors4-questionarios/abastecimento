@@ -1,5 +1,5 @@
 {
-  "actualizadoEm": "2026-11-06T08:10:27.0124596Z",
+  "actualizadoEm": "2026-11-06T08:15:26.7688792Z",
   "viaturas": [
     {
       "codigo": "AOT 435 MC",
@@ -184,5 +184,6 @@
       "estado": "Activo"
     }
   ],
-  "precosPostos": []
+  "precosPostos": [],
+  "precosDistintos": []
 }
