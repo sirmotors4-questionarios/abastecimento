@@ -26,3 +26,49 @@ KM -> KM -> quilometragem no momento do abastecimento
 
 Quando ligares isto ao Power Automate (accao "Add a row into a table" sobre tbl_abastecimentos), usa este mapeamento.
 
+
+## Postos de abastecimento — origem exclusiva no Excel
+
+O ComboBox **Posto** é alimentado apenas pelos valores distintos e não vazios
+da coluna `Posto` da tabela `tbl_abastecimentos` no livro
+`/General/Operações/Workbook_Operacoes_Rodoviarias_v1.xlsx`.
+
+O formulário lê `data/master-data.json`, actualizado por
+`.github/workflows/sync-master-data.yml`. Para a actualização automática,
+o fluxo Power Automate responsável pela sincronização dos dados mestre deve:
+
+1. Usar **List rows present in a table** (Excel Online Business) para obter
+   os registos de `tbl_abastecimentos`, activando **Paginação** e definindo
+   um limite apropriado ao volume da tabela.
+2. Na acção **HTTP** que chama a API de GitHub `repository_dispatch`,
+   acrescentar `abastecimentos` ao `client_payload` com o valor
+   `body('Listar_Abastecimentos')?['value']` (ajustar ao nome real da acção),
+   mantendo `viaturas` e `actualizadoEm`.
+3. Confirmar que a execução da GitHub Action termina com sucesso. O ficheiro
+   `data/master-data.json` passará a conter `postos` deduplicados e ordenados.
+
+Exemplo da estrutura da mensagem para `repository_dispatch`
+(substituir os dados exemplificativos; não colocar token no JSON do repositório):
+
+```json
+{
+  "event_type": "sync-master-data",
+  "client_payload": {
+    "viaturas": [],
+    "abastecimentos": [
+      {"Posto": "Posto A"},
+      {"Posto": "Posto B"},
+      {"Posto": "Posto A"}
+    ]
+  }
+}
+```
+
+O exemplo produzirá dois postos; nenhuma lista está codificada no site.
+**A inclusão de um novo posto através de OUTRO não actualiza por si só
+o ficheiro JSON**: o nome passa a integrar o ComboBox dos dispositivos
+depois de ser gravado no Excel e executada a sincronização.
+
+**Nota:** a GitHub Action só consulta os dados recebidos no evento;
+não possui acesso directo ao Excel SharePoint. A alteração do fluxo de
+sincronização no Power Automate é indispensável.
