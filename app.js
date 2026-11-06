@@ -60,6 +60,54 @@ function guardarResponsavel(nome) {
 }
 responsavelSelect.addEventListener('change', actualizarCampoResponsavel);
 
+
+const postoSelect = document.querySelector('#postoSelect');
+const outroPosto = document.querySelector('#outroPosto');
+const outroPostoLabel = document.querySelector('#outroPostoLabel');
+const POSTOS_STORAGE = 'sirAbastecimentoPostos';
+let postosMaster = [];
+function postosLocais() {
+  try {
+    const result = JSON.parse(localStorage.getItem(POSTOS_STORAGE) || '[]');
+    return Array.isArray(result) ? result.filter(item => typeof item === 'string') : [];
+  } catch { return []; }
+}
+function nomePosto(item) {
+  if (typeof item === 'string') return item.trim();
+  return String(item?.nome || item?.Nome || item?.Posto || item?.posto || item?.codigo || '').trim();
+}
+function actualizarCampoPosto() {
+  const outro = postoSelect.value === '__outro__';
+  outroPostoLabel.hidden = !outro;
+  outroPosto.disabled = !outro;
+  outroPosto.required = outro;
+  if (!outro) outroPosto.classList.remove('invalid');
+  updateProgress();
+}
+function preencherPostos(lista = null) {
+  if (Array.isArray(lista)) postosMaster = lista.filter(item => typeof item === 'string' || isActive(item));
+  const anterior = postoSelect.value;
+  const postos = [...new Map([...postosMaster, ...postosLocais()]
+    .map(nomePosto).filter(nome => nome && nome.toLocaleLowerCase('pt') !== 'outro')
+    .map(nome => [nome.toLocaleLowerCase('pt'), nome])).values()]
+    .sort((x,y) => x.localeCompare(y,'pt'));
+  postoSelect.replaceChildren(new Option('OUTRO — indicar posto','__outro__'),
+    ...postos.map(nome => new Option(nome,nome)));
+  postoSelect.value = postos.includes(anterior) ? anterior : '__outro__';
+  actualizarCampoPosto();
+}
+function postoEscolhido() {
+  return (postoSelect.value === '__outro__' ? outroPosto.value : postoSelect.value).trim();
+}
+function guardarPosto(nome) {
+  try {
+    const postos = [...postosLocais(),nome].map(x=>x.trim()).filter(Boolean);
+    localStorage.setItem(POSTOS_STORAGE,JSON.stringify([...new Map(postos.map(x=>[x.toLocaleLowerCase('pt'),x])).values()]));
+  } catch (error) { console.warn('Não foi possível guardar o posto localmente.',error); }
+  preencherPostos();
+}
+postoSelect.addEventListener('change',actualizarCampoPosto);
+
 const isActive = item => !item.estado || ['activo','activa','operacional','disponível','disponivel'].includes(normalise(item.estado).toLowerCase());
 
 function setToday() {
@@ -76,7 +124,7 @@ async function loadMasterData() {
     if (!response.ok) throw new Error('Não foi possível consultar as listas.');
     const data = await response.json();
     fillSelect('viaturas', data.viaturas, item => `${item.matricula || item.codigo}${item.modelo ? ` · ${item.modelo}` : ''}`, item => item.matricula || item.codigo);
-    fillSelect('postos', data.postos, item => item.nome || item.codigo, item => item.nome || item.codigo);
+    preencherPostos(Array.isArray(data.postos) ? data.postos : []);
     const responsaveis = data.responsaveis || data.responsaveisAbastecimento || data.utilizadores || [];
     responsaveisMaster = Array.isArray(responsaveis) ? responsaveis : [];
     preencherResponsaveis();
@@ -142,7 +190,17 @@ form.addEventListener('submit', async event => {
     document.querySelector('#formHint').textContent = 'Indique o responsável pelo abastecimento.';
     return;
   }
+  const posto = postoEscolhido();
+  if (!posto) {
+    outroPosto.classList.add('invalid');
+    outroPosto.focus();
+    document.querySelector('#formHint').textContent = 'Indique o posto de abastecimento.';
+    return;
+  }
   const payload = Object.fromEntries(new FormData(form).entries());
+  delete payload.postoEscolha;
+  delete payload.postoNovo;
+  payload.Posto = posto;
   delete payload.responsavelSeleccao;
   delete payload.responsavelNovo;
   payload.Responsavel = responsavel;
@@ -166,6 +224,7 @@ form.addEventListener('submit', async event => {
       localStorage.setItem('sirAbastecimentoDemo', JSON.stringify(entries));
     }
     guardarResponsavel(responsavel);
+    guardarPosto(posto);
     form.hidden = true;
     successPanel.hidden = false;
     document.querySelector('#successMessage').textContent = config.demoMode ? 'Modo de demonstração: o registo ficou guardado neste dispositivo.' : 'Os dados foram enviados para o sistema com sucesso.';
@@ -179,6 +238,8 @@ form.addEventListener('submit', async event => {
 });
 document.querySelector('#newEntry').addEventListener('click', () => {
   form.reset();
+  outroPosto.value = '';
+  preencherPostos();
   outroResponsavel.value = '';
   preencherResponsaveis();
   setToday();
@@ -190,6 +251,7 @@ document.querySelector('#newEntry').addEventListener('click', () => {
 });
 
 preencherResponsaveis();
+preencherPostos();
 setToday();
 loadMasterData();
 updateProgress();
