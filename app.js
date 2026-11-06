@@ -96,27 +96,39 @@ postoSelect.addEventListener('change',actualizarCampoPosto);
 
 
 const precoHistorico = document.querySelector('#precoHistorico');
-let precosPostos = {};
+const precoSelect = document.querySelector('#precoSelect');
+const outroPreco = document.querySelector('#outroPreco');
+const outroPrecoLabel = document.querySelector('#outroPrecoLabel');
+let precosPostos = {}, precosDistintos = [];
 function chavePosto(valor) { return normalise(valor).toLocaleLowerCase('pt'); }
-function carregarPrecoHistorico() {
-  const nome = postoEscolhido();
-  const info = precosPostos[chavePosto(nome)];
-  const valorInput = form.elements['ValorUnitario'];
-  if (info && Number.isFinite(Number(info.valor)) && Number(info.valor) > 0) {
-    valorInput.value = Number(info.valor).toFixed(2);
-    precoHistorico.textContent = 'Último preço registado neste posto: ' +
-      new Intl.NumberFormat('pt-MZ',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(info.valor)) +
-      ' MZN/litro (data: ' + info.data + '). Confirme antes de enviar.';
-  } else {
-    valorInput.value = '';
-    precoHistorico.textContent = nome ? 'Sem preço anterior disponível para este posto. Indique o valor unitário.' :
-      'Seleccione um posto para consultar o último preço registado.';
-  }
+function precoEscolhido() { return precoSelect.value === '__outro__' ? outroPreco.value : precoSelect.value; }
+function atualizarCampoPreco() {
+  const outro = precoSelect.value === '__outro__';
+  outroPrecoLabel.hidden = !outro;
+  outroPreco.disabled = !outro;
+  outroPreco.required = outro;
   calcValorTotal();
   updateProgress();
 }
-postoSelect.addEventListener('change',carregarPrecoHistorico);
-outroPosto.addEventListener('input',carregarPrecoHistorico);
+function carregarPrecoHistorico() {
+  const posto = postoEscolhido();
+  const anterior = precosPostos[chavePosto(posto)];
+  const ultimo = anterior && Number(anterior.valor)>0 ? Number(anterior.valor).toFixed(2) : '';
+  const valores = [...new Set([...precosDistintos, ...(ultimo ? [ultimo] : [])]
+    .map(v => Number(v)).filter(v => Number.isFinite(v) && v>0).map(v => v.toFixed(2)))]
+    .sort((a,b)=>Number(a)-Number(b));
+  precoSelect.replaceChildren(new Option('OUTRO — indicar preço','__outro__'),
+    ...valores.map(v=>new Option(new Intl.NumberFormat('pt-MZ',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(v))+' MT',v)));
+  precoSelect.value = ultimo || '__outro__';
+  precoHistorico.textContent = ultimo ?
+    'Último preço deste posto: '+ultimo+' MT/litro (data: '+anterior.data+'). Pode seleccionar outro valor.' :
+    'Sem preço anterior para este posto. Seleccione um preço distinto ou indique OUTRO.';
+  atualizarCampoPreco();
+}
+postoSelect.addEventListener('change', carregarPrecoHistorico);
+outroPosto.addEventListener('input', carregarPrecoHistorico);
+precoSelect.addEventListener('change', atualizarCampoPreco);
+outroPreco.addEventListener('input', () => { calcValorTotal(); updateProgress(); });
 
 const isActive = item => !item.estado || ['activo','activa','operacional','disponível','disponivel'].includes(normalise(item.estado).toLowerCase());
 
@@ -140,6 +152,7 @@ async function loadMasterData() {
       const nome = nomePosto(item);
       if (nome) precosPostos[chavePosto(nome)] = {valor:item.valor, data:item.data};
     }
+    precosDistintos = Array.isArray(data.precosDistintos) ? data.precosDistintos : [];
     carregarPrecoHistorico();
     const responsaveis = data.responsaveis || data.responsaveisAbastecimento || data.utilizadores || [];
     responsaveisMaster = Array.isArray(responsaveis) ? responsaveis : [];
@@ -174,7 +187,7 @@ function updateProgress() {
 
 function calcValorTotal() {
   const litros = parseFloat(form.elements['Litros'].value);
-  const valorUnitario = parseFloat(form.elements['ValorUnitario'].value);
+  const valorUnitario = parseFloat(precoEscolhido());
   if (!isNaN(litros) && !isNaN(valorUnitario)) {
     const total = litros * valorUnitario;
     valorTotalDisplay.value = new Intl.NumberFormat('pt-MZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(total);
@@ -220,6 +233,15 @@ form.addEventListener('submit', async event => {
   delete payload.responsavelSeleccao;
   delete payload.responsavelNovo;
   payload.Responsavel = responsavel;
+  delete payload.precoEscolha;
+  delete payload.precoNovo;
+  const valorUnitarioEscolhido = Number(precoEscolhido());
+  if (!Number.isFinite(valorUnitarioEscolhido) || valorUnitarioEscolhido <= 0) {
+    document.querySelector('#formHint').textContent = 'Indique um valor unitário válido.';
+    (precoSelect.value === '__outro__' ? outroPreco : precoSelect).focus();
+    return;
+  }
+  payload.ValorUnitario = valorUnitarioEscolhido.toFixed(2);
   delete payload.ValorTotalDisplay;
   // Valor Total é uma coluna calculada em tbl_abastecimentos (=[@Litros]*[@[Valor Unitario]]).
   // Enviamos o valor calculado também, para o caso de o fluxo do Power Automate precisar dele explicitamente.
@@ -253,6 +275,7 @@ form.addEventListener('submit', async event => {
 });
 document.querySelector('#newEntry').addEventListener('click', () => {
   form.reset();
+  outroPreco.value = '';
   outroPosto.value = '';
   preencherPostos();
   carregarPrecoHistorico();
