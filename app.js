@@ -94,6 +94,30 @@ function postoEscolhido() {
 }
 postoSelect.addEventListener('change',actualizarCampoPosto);
 
+
+const precoHistorico = document.querySelector('#precoHistorico');
+let precosPostos = {};
+function chavePosto(valor) { return normalise(valor).toLocaleLowerCase('pt'); }
+function carregarPrecoHistorico() {
+  const nome = postoEscolhido();
+  const info = precosPostos[chavePosto(nome)];
+  const valorInput = form.elements['ValorUnitario'];
+  if (info && Number.isFinite(Number(info.valor)) && Number(info.valor) > 0) {
+    valorInput.value = Number(info.valor).toFixed(2);
+    precoHistorico.textContent = 'Último preço registado neste posto: ' +
+      new Intl.NumberFormat('pt-MZ',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(info.valor)) +
+      ' MZN/litro (data: ' + info.data + '). Confirme antes de enviar.';
+  } else {
+    valorInput.value = '';
+    precoHistorico.textContent = nome ? 'Sem preço anterior disponível para este posto. Indique o valor unitário.' :
+      'Seleccione um posto para consultar o último preço registado.';
+  }
+  calcValorTotal();
+  updateProgress();
+}
+postoSelect.addEventListener('change',carregarPrecoHistorico);
+outroPosto.addEventListener('input',carregarPrecoHistorico);
+
 const isActive = item => !item.estado || ['activo','activa','operacional','disponível','disponivel'].includes(normalise(item.estado).toLowerCase());
 
 function setToday() {
@@ -111,6 +135,12 @@ async function loadMasterData() {
     const data = await response.json();
     fillSelect('viaturas', data.viaturas, item => `${item.matricula || item.codigo}${item.modelo ? ` · ${item.modelo}` : ''}`, item => item.matricula || item.codigo);
     preencherPostos(Array.isArray(data.postos) ? data.postos : []);
+    precosPostos = {};
+    for (const item of (Array.isArray(data.precosPostos) ? data.precosPostos : [])) {
+      const nome = nomePosto(item);
+      if (nome) precosPostos[chavePosto(nome)] = {valor:item.valor, data:item.data};
+    }
+    carregarPrecoHistorico();
     const responsaveis = data.responsaveis || data.responsaveisAbastecimento || data.utilizadores || [];
     responsaveisMaster = Array.isArray(responsaveis) ? responsaveis : [];
     preencherResponsaveis();
@@ -225,6 +255,7 @@ document.querySelector('#newEntry').addEventListener('click', () => {
   form.reset();
   outroPosto.value = '';
   preencherPostos();
+  carregarPrecoHistorico();
   outroResponsavel.value = '';
   preencherResponsaveis();
   setToday();
@@ -237,6 +268,7 @@ document.querySelector('#newEntry').addEventListener('click', () => {
 
 preencherResponsaveis();
 preencherPostos();
+carregarPrecoHistorico();
 setToday();
 loadMasterData();
 updateProgress();
