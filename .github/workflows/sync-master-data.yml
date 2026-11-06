@@ -49,7 +49,7 @@ jobs:
           for linha in abastecimentos:
               if not isinstance(linha, dict):
                   continue
-              posto = str(ler_campo(linha, "Posto") or "").strip()
+              posto = str(linha.get("Posto") or linha.get("posto") or "").strip()
               if posto and posto.casefold() not in postos_unicos:
                   postos_unicos[posto.casefold()] = posto
           postos_ordenados = [
