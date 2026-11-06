@@ -72,3 +72,8 @@ depois de ser gravado no Excel e executada a sincronização.
 **Nota:** a GitHub Action só consulta os dados recebidos no evento;
 não possui acesso directo ao Excel SharePoint. A alteração do fluxo de
 sincronização no Power Automate é indispensável.
+
+## Preenchimento do valor unitário
+O campo `ValorUnitario` procura o preço do **último registo por data** do mesmo `Posto`, a partir da coluna Excel `Valor Unitario` de `tbl_abastecimentos`. Para empates na data usa a última linha devolvida pela consulta. Só são aceites valores positivos e datas válidas. O preço é uma sugestão editável e o operador deve confirmar o valor efectivo.
+
+A GitHub Action `sync-master-data.yml` utiliza a lista completa recebida em `client_payload.abastecimentos` para publicar `precosPostos: [{nome, valor, data}]` no `data/master-data.json`. Não existem preços fictícios. Até o fluxo de sincronização ser executado novamente com os registos, o campo fica vazio e permite o preenchimento manual.
