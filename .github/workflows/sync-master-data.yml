@@ -57,10 +57,73 @@ jobs:
               for posto in sorted(postos_unicos.values(), key=str.casefold)
           ]
 
+
+          # Preco mais recente valido por posto, obtido da propria tabela Excel.
+          # Datas ISO e numeros seriais Excel sao aceites. Em empate, prevalece
+          # o ultimo registo da lista recebida.
+          from datetime import timedelta
+          import re
+
+          def data_iso(valor):
+              if valor is None or valor == "":
+                  return None
+              if isinstance(valor, (int, float)):
+                  try:
+                      return (datetime(1899, 12, 30) + timedelta(days=float(valor))).strftime("%Y-%m-%d")
+                  except (ValueError, OverflowError):
+                      return None
+              texto = str(valor).strip()
+              if re.fullmatch(r"\d+(?:\.\d+)?", texto):
+                  return data_iso(float(texto))
+              try:
+                  return datetime.fromisoformat(texto.replace("Z", "+00:00")).strftime("%Y-%m-%d")
+              except ValueError:
+                  pass
+              for formato in ("%d/%m/%Y", "%d-%m-%Y", "%Y/%m/%d"):
+                  try:
+                      return datetime.strptime(texto, formato).strftime("%Y-%m-%d")
+                  except ValueError:
+                      continue
+              return None
+
+          def preco_numero(valor):
+              texto = str(valor or "").strip().replace(" ", "").replace("\u00a0", "")
+              if not texto:
+                  return None
+              # Separador decimal portugues ou ingles.
+              if "," in texto and "." in texto:
+                  texto = texto.replace(".", "").replace(",", ".") if texto.rfind(",") > texto.rfind(".") else texto.replace(",", "")
+              elif "," in texto:
+                  texto = texto.replace(",", ".")
+              try:
+                  numero = float(texto)
+                  return numero if 0 < numero < 1000000 and numero != float("inf") else None
+              except ValueError:
+                  return None
+
+          precos_recentes = {}
+          for ordem, linha in enumerate(abastecimentos):
+              if not isinstance(linha, dict):
+                  continue
+              posto = str(linha.get("Posto") or linha.get("posto") or "").strip()
+              data = data_iso(linha.get("Data") or linha.get("data"))
+              preco = preco_numero(linha.get("Valor Unitario") or linha.get("Valor Unitário") or linha.get("ValorUnitario"))
+              if not posto or not data or preco is None:
+                  continue
+              chave = posto.casefold()
+              anterior = precos_recentes.get(chave)
+              if anterior is None or (data, ordem) > (anterior["data"], anterior["ordem"]):
+                  precos_recentes[chave] = {"nome": posto, "valor": preco, "data": data, "ordem": ordem}
+          precos_publicos = [
+              {"nome": preco["nome"], "valor": preco["valor"], "data": preco["data"]}
+              for preco in sorted(precos_recentes.values(), key=lambda item: item["nome"].casefold())
+          ]
+
           public_data = {
               "actualizadoEm": payload.get("actualizadoEm") or datetime.now(timezone.utc).isoformat(),
               "viaturas": clean(payload.get("viaturas"), ["codigo", "estado"]),
-              "postos": postos_ordenados
+              "postos": postos_ordenados,
+              "precosPostos": precos_publicos
           }
 
           path.parent.mkdir(parents=True, exist_ok=True)
