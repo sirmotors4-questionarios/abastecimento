@@ -129,7 +129,7 @@ function carregarPrecoHistorico() {
     'Último preço deste posto: ' + ultimo + ' MT/litro (data: ' + anterior.data + '). Pode seleccionar outro valor.' :
     valores.length ?
       'Sem preço anterior deste posto. Seleccionado o valor mais recente da base de dados; confirme antes de enviar.' :
-      'Ainda não há preços sincronizados do Excel. Utilize OUTRO para indicar o valor.';
+      'Não foram recebidos preços unitários válidos do Excel. Utilize OUTRO e confirme a sincronização.';
   atualizarCampoPreco();
 }
 postoSelect.addEventListener('change', carregarPrecoHistorico);
