@@ -143,7 +143,7 @@ function setToday() {
   const now = new Date();
   const offset = now.getTimezoneOffset();
   const local = new Date(now.getTime() - offset * 60000);
-  form.elements['Data'].value = local.toISOString().slice(0, 10);
+  form.elements['Data'].value = local.toISOString().slice(0, 16);
   document.querySelector('#todayLabel').textContent = new Intl.DateTimeFormat('pt-MZ', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(now);
 }
 async function loadMasterData() {
@@ -234,6 +234,9 @@ form.addEventListener('submit', async event => {
     return;
   }
   const payload = Object.fromEntries(new FormData(form).entries());
+  // A mesma coluna Data recebe data e hora local em formato ISO,
+  // preservando os segundos para compatibilidade com Excel / Power Automate.
+  payload.Data = payload.Data.length === 16 ? payload.Data + ':00' : payload.Data;
   delete payload.postoEscolha;
   delete payload.postoNovo;
   payload.Posto = posto;
