@@ -25,7 +25,6 @@ jobs:
           from pathlib import Path
 
           path = Path("data/master-data.json")
-          current = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
           payload = json.loads(os.environ["MASTER_DATA_PAYLOAD"])
 
           def clean(items, fields):
@@ -38,10 +37,12 @@ jobs:
                       output.append(row)
               return output
 
+          # Os postos são exclusivamente os recebidos no evento do Power Automate.
+          # Se a integração não os fornecer, a lista ficará vazia (sem exemplos fictícios).
           public_data = {
               "actualizadoEm": payload.get("actualizadoEm") or datetime.now(timezone.utc).isoformat(),
               "viaturas": clean(payload.get("viaturas"), ["codigo", "estado"]),
-              "postos": current.get("postos", [])
+              "postos": clean(payload.get("postos"), ["codigo", "nome", "estado"])
           }
 
           path.parent.mkdir(parents=True, exist_ok=True)
