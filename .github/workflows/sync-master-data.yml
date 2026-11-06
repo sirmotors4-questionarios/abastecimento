@@ -119,21 +119,32 @@ jobs:
               for preco in sorted(precos_recentes.values(), key=lambda item: item["nome"].casefold())
           ]
 
-          # Valores distintos de toda a coluna Valor Unitario, sem inventar precos.
-          precos_distintos = set()
-          for linha in abastecimentos:
+          # Todos os preços distintos da coluna Valor Unitario em ordem de
+          # data mais recente (sem repetição), não ordem numérica.
+          datas_por_preco = {}
+          for ordem, linha in enumerate(abastecimentos):
               if not isinstance(linha, dict):
                   continue
               preco = preco_numero(linha.get("Valor Unitario") or linha.get("Valor Unitário") or linha.get("ValorUnitario"))
-              if preco is not None:
-                  precos_distintos.add(round(preco, 2))
+              data = data_iso(linha.get("Data") or linha.get("data"))
+              if preco is None:
+                  continue
+              preco = round(preco, 2)
+              marcador = (data or "", ordem)
+              if preco not in datas_por_preco or marcador > datas_por_preco[preco]:
+                  datas_por_preco[preco] = marcador
+          precos_distintos = sorted(
+              datas_por_preco,
+              key=lambda preco: datas_por_preco[preco],
+              reverse=True
+          )
 
           public_data = {
               "actualizadoEm": payload.get("actualizadoEm") or datetime.now(timezone.utc).isoformat(),
               "viaturas": clean(payload.get("viaturas"), ["codigo", "estado"]),
               "postos": postos_ordenados,
               "precosPostos": precos_publicos,
-              "precosDistintos": sorted(precos_distintos)
+              "precosDistintos": precos_distintos
           }
 
           path.parent.mkdir(parents=True, exist_ok=True)
