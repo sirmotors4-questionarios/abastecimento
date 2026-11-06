@@ -1,5 +1,5 @@
 {
-  "actualizadoEm": "2026-11-06T10:10:28.1060921Z",
+  "actualizadoEm": "2026-11-06T10:50:29.6663078Z",
   "viaturas": [
     {
       "codigo": "AOT 435 MC",
@@ -184,6 +184,45 @@
       "estado": "Activo"
     }
   ],
-  "precosPostos": [],
-  "precosDistintos": []
+  "precosPostos": [
+    {
+      "nome": "Petromoc - Baixa",
+      "valor": 52.73,
+      "data": "2026-09-20"
+    },
+    {
+      "nome": "AUTO Gas -  Mozal/ Mozel",
+      "valor": 52.73,
+      "data": "2026-10-30"
+    },
+    {
+      "nome": "AUTO Gas - EMPTM/ Maputo",
+      "valor": 52.73,
+      "data": "2026-11-05"
+    },
+    {
+      "nome": "Posto GNC FMC Marracuene/ Maputo province",
+      "valor": 52.73,
+      "data": "2026-11-05"
+    },
+    {
+      "nome": "AUTO Gas - ETM/ Maputo province",
+      "valor": 52.73,
+      "data": "2026-08-29"
+    },
+    {
+      "nome": "Petromoc - MACHAVA/ MACHAVA-Matilda",
+      "valor": 52.73,
+      "data": "2026-08-12"
+    }
+  ],
+  "precosDistintos": [
+    52.73
+  ],
+  "diagnosticoPrecos": {
+    "modo": "compacto",
+    "precosDistintosRecebidos": 1,
+    "precosValidos": 1,
+    "precosPorPosto": 6
+  }
 }
