@@ -170,6 +170,50 @@ jobs:
               "colunasDisponiveis": list(abastecimentos[0].keys()) if abastecimentos and isinstance(abastecimentos[0], dict) else []
           }
 
+          # Payload reduzido: evita o limite de tamanho do repository_dispatch.
+          # As listas únicas são calculadas no Power Automate, não se enviam
+          # os milhares de registos completos do Excel.
+          if "postos" in payload:
+              postos_agrupados = {}
+              for item in payload.get("postos", []):
+                  nome = str(ler_campo(item, "Posto", "nome") or "").strip()
+                  if nome:
+                      postos_agrupados[nome.casefold()] = nome
+              postos_ordenados = [
+                  {"nome": nome, "estado": "Activo"}
+                  for nome in sorted(postos_agrupados.values(), key=str.casefold)
+              ]
+          if "precosDistintos" in payload:
+              valores = []
+              unicos = set()
+              for item in payload.get("precosDistintos", []):
+                  bruto = ler_campo(item, "valor", "Valor Unitario", "ValorUnitario")
+                  preco = preco_numero(bruto)
+                  if preco is not None:
+                      preco = round(preco, 2)
+                      if preco not in unicos:
+                          unicos.add(preco)
+                          valores.append(preco)
+              precos_distintos = valores
+          if "precosPostos" in payload:
+              recentes = {}
+              for item in payload.get("precosPostos", []):
+                  nome = str(ler_campo(item, "nome", "Posto") or "").strip()
+                  valor = preco_numero(ler_campo(item, "valor", "Valor Unitario", "ValorUnitario"))
+                  data = data_iso(ler_campo(item, "data", "Data"))
+                  if nome and valor is not None and data:
+                      chave = nome.casefold()
+                      if chave not in recentes or data >= recentes[chave]["data"]:
+                          recentes[chave] = {"nome": nome, "valor": valor, "data": data}
+              precos_publicos = list(recentes.values())
+          if "precosDistintos" in payload:
+              diagnostico = {
+                  "modo": "compacto",
+                  "precosDistintosRecebidos": len(payload.get("precosDistintos", [])),
+                  "precosValidos": len(precos_distintos),
+                  "precosPorPosto": len(precos_publicos)
+              }
+
           public_data = {
               "actualizadoEm": payload.get("actualizadoEm") or datetime.now(timezone.utc).isoformat(),
               "viaturas": clean(payload.get("viaturas"), ["codigo", "estado"]),
