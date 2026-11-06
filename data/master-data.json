@@ -158,36 +158,5 @@
       "estado": ""
     }
   ],
-  "postos": [
-    {
-      "codigo": "PST001",
-      "nome": "Petromoc - Baixa",
-      "estado": "Activo"
-    },
-    {
-      "codigo": "PST002",
-      "nome": "Petromoc - Matola Gare",
-      "estado": "Activo"
-    },
-    {
-      "codigo": "PST003",
-      "nome": "Puma - Museu",
-      "estado": "Activo"
-    },
-    {
-      "codigo": "PST004",
-      "nome": "Total - Boane",
-      "estado": "Activo"
-    },
-    {
-      "codigo": "PST005",
-      "nome": "Vip - Marracuene",
-      "estado": "Activo"
-    },
-    {
-      "codigo": "PST006",
-      "nome": "Posto interno - Base SIR Motors",
-      "estado": "Activo"
-    }
-  ]
+  "postos": []
 }
