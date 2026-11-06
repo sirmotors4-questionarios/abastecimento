@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b5aa8">
   <meta name="description" content="Registo operacional de Abastecimento da SIR Motors.">
   <title>Abastecimento | SIR Motors</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
   <header class="topbar">
@@ -60,7 +60,7 @@
         <div class="section-heading"><span>02</span><div><h3>Abastecimento</h3><p>Combustível e valor</p></div></div>
         <div class="grid">
           <label>Litros abastecidos *<input type="number" name="Litros" min="0" step="0.01" inputmode="decimal" required></label>
-          <label>Valor unitário (MZN/litro) *<input type="number" name="ValorUnitario" min="0" step="0.01" inputmode="decimal" required></label>
+          <label>Valor unitário (MZN/litro) *<input type="number" name="ValorUnitario" min="0" step="0.01" inputmode="decimal" required><small id="precoHistorico" class="preco-historico" aria-live="polite">Seleccione um posto para consultar o último preço registado.</small></label>
           <label class="wide">Valor total (MZN)<input type="text" name="ValorTotalDisplay" id="valorTotalDisplay" readonly placeholder="Calculado automaticamente"></label>
         </div>
       </section>
@@ -88,6 +88,6 @@
 
   <footer><span>SIR Motors · Operações Rodoviárias</span><span id="dataTimestamp"></span></footer>
   <script src="config.js"></script>
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
