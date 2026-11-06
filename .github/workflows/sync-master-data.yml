@@ -49,7 +49,7 @@ jobs:
           for linha in abastecimentos:
               if not isinstance(linha, dict):
                   continue
-              posto = str(linha.get("Posto") or linha.get("posto") or "").strip()
+              posto = str(ler_campo(linha, "Posto") or "").strip()
               if posto and posto.casefold() not in postos_unicos:
                   postos_unicos[posto.casefold()] = posto
           postos_ordenados = [
@@ -86,11 +86,28 @@ jobs:
                       continue
               return None
 
+          # Correspondencia tolerante a acentos, maiusculas, espacos e
+          # nomes escapados do conector Excel.
+          import unicodedata
+          def chave_normalizada(valor):
+              texto = unicodedata.normalize("NFKD", str(valor))
+              return "".join(c for c in texto if not unicodedata.combining(c)).lower().replace(" ", "").replace("_", "").replace("-", "")
+          def ler_campo(linha, *nomes):
+              if not isinstance(linha, dict):
+                  return None
+              valores = {chave_normalizada(k): v for k, v in linha.items()}
+              for nome in nomes:
+                  valor = valores.get(chave_normalizada(nome))
+                  if valor is not None and str(valor).strip():
+                      return valor
+              return None
           def preco_numero(valor):
-              texto = str(valor or "").strip().replace(" ", "").replace("\u00a0", "")
+              if valor is None:
+                  return None
+              texto = str(valor).strip().replace("\\u00a0", " ")
+              texto = re.sub(r"[^0-9,.\\-]", "", texto)
               if not texto:
                   return None
-              # Separador decimal portugues ou ingles.
               if "," in texto and "." in texto:
                   texto = texto.replace(".", "").replace(",", ".") if texto.rfind(",") > texto.rfind(".") else texto.replace(",", "")
               elif "," in texto:
@@ -105,9 +122,9 @@ jobs:
           for ordem, linha in enumerate(abastecimentos):
               if not isinstance(linha, dict):
                   continue
-              posto = str(linha.get("Posto") or linha.get("posto") or "").strip()
-              data = data_iso(linha.get("Data") or linha.get("data"))
-              preco = preco_numero(linha.get("Valor Unitario") or linha.get("Valor Unitário") or linha.get("ValorUnitario"))
+              posto = str(ler_campo(linha, "Posto") or "").strip()
+              data = data_iso(ler_campo(linha, "Data"))
+              preco = preco_numero(ler_campo(linha, "Valor Unitario", "Valor Unitário", "ValorUnitario", "PrecoUnitario", "Preço Unitário"))
               if not posto or not data or preco is None:
                   continue
               chave = posto.casefold()
@@ -125,8 +142,8 @@ jobs:
           for ordem, linha in enumerate(abastecimentos):
               if not isinstance(linha, dict):
                   continue
-              preco = preco_numero(linha.get("Valor Unitario") or linha.get("Valor Unitário") or linha.get("ValorUnitario"))
-              data = data_iso(linha.get("Data") or linha.get("data"))
+              preco = preco_numero(ler_campo(linha, "Valor Unitario", "Valor Unitário", "ValorUnitario", "PrecoUnitario", "Preço Unitário"))
+              data = data_iso(ler_campo(linha, "Data"))
               if preco is None:
                   continue
               preco = round(preco, 2)
@@ -139,12 +156,27 @@ jobs:
               reverse=True
           )
 
+          # Diagnostico operacional: quantos registos chegaram da tabela
+          # e quantos continham preco reconhecivel.
+          total_com_valor = sum(
+              1 for linha in abastecimentos
+              if isinstance(linha, dict) and preco_numero(
+                  ler_campo(linha, "Valor Unitario", "Valor Unitário", "ValorUnitario", "PrecoUnitario", "Preço Unitário")
+              ) is not None
+          )
+          diagnostico = {
+              "linhasRecebidas": len(abastecimentos),
+              "linhasComValorUnitario": total_com_valor,
+              "colunasDisponiveis": list(abastecimentos[0].keys()) if abastecimentos and isinstance(abastecimentos[0], dict) else []
+          }
+
           public_data = {
               "actualizadoEm": payload.get("actualizadoEm") or datetime.now(timezone.utc).isoformat(),
               "viaturas": clean(payload.get("viaturas"), ["codigo", "estado"]),
               "postos": postos_ordenados,
               "precosPostos": precos_publicos,
-              "precosDistintos": precos_distintos
+              "precosDistintos": precos_distintos,
+              "diagnosticoPrecos": diagnostico
           }
 
           path.parent.mkdir(parents=True, exist_ok=True)
