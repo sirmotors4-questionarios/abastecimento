@@ -39,10 +39,28 @@ jobs:
 
           # Os postos são exclusivamente os recebidos no evento do Power Automate.
           # Se a integração não os fornecer, a lista ficará vazia (sem exemplos fictícios).
+          # A fonte dos postos e a coluna Posto da tabela de abastecimentos.
+          # Aceita o conjunto de linhas do Excel em client_payload.abastecimentos.
+          # Nao se inventam nem persistem postos que tenham desaparecido da fonte.
+          abastecimentos = payload.get("abastecimentos", [])
+          if not isinstance(abastecimentos, list):
+              raise ValueError("abastecimentos deve ser uma lista de registos Excel")
+          postos_unicos = {}
+          for linha in abastecimentos:
+              if not isinstance(linha, dict):
+                  continue
+              posto = str(linha.get("Posto") or linha.get("posto") or "").strip()
+              if posto and posto.casefold() not in postos_unicos:
+                  postos_unicos[posto.casefold()] = posto
+          postos_ordenados = [
+              {"nome": posto, "estado": "Activo"}
+              for posto in sorted(postos_unicos.values(), key=str.casefold)
+          ]
+
           public_data = {
               "actualizadoEm": payload.get("actualizadoEm") or datetime.now(timezone.utc).isoformat(),
               "viaturas": clean(payload.get("viaturas"), ["codigo", "estado"]),
-              "postos": clean(payload.get("postos"), ["codigo", "nome", "estado"])
+              "postos": postos_ordenados
           }
 
           path.parent.mkdir(parents=True, exist_ok=True)
