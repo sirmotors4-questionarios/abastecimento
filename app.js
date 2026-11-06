@@ -6,6 +6,60 @@ const successPanel = document.querySelector('#successPanel');
 const valorTotalDisplay = document.querySelector('#valorTotalDisplay');
 
 const normalise = value => String(value ?? '').trim();
+// Responsáveis conhecidos neste navegador e, quando disponíveis, nos dados mestre.
+// A coluna enviada à base de dados continua a chamar-se exactamente "Responsavel".
+const responsavelSelect = document.querySelector('#responsavelSelect');
+const outroResponsavel = document.querySelector('#outroResponsavel');
+const outroResponsavelLabel = document.querySelector('#outroResponsavelLabel');
+const RESPONSAVEIS_STORAGE = 'sirAbastecimentoResponsaveis';
+let responsaveisMaster = [];
+function responsaveisLocais() {
+  try {
+    const valores = JSON.parse(localStorage.getItem(RESPONSAVEIS_STORAGE) || '[]');
+    return Array.isArray(valores) ? valores.filter(x => typeof x === 'string') : [];
+  } catch { return []; }
+}
+function nomeResponsavel(item) {
+  if (typeof item === 'string') return item.trim();
+  return String(item?.Responsavel || item?.responsavel || item?.Nome ||
+    item?.nome || item?.codigo || '').trim();
+}
+function actualizarCampoResponsavel() {
+  const outro = responsavelSelect.value === '__outro__';
+  outroResponsavelLabel.hidden = !outro;
+  outroResponsavel.disabled = !outro;
+  outroResponsavel.required = outro;
+  if (!outro) outroResponsavel.classList.remove('invalid');
+  updateProgress();
+}
+function preencherResponsaveis() {
+  const anterior = responsavelSelect.value;
+  const nomes = [...new Map([...responsaveisMaster, ...responsaveisLocais()]
+    .map(nomeResponsavel).filter(nome => nome && nome.toLocaleLowerCase('pt') !== 'outro')
+    .map(nome => [nome.toLocaleLowerCase('pt'), nome])).values()]
+    .sort((x,y) => x.localeCompare(y, 'pt'));
+  responsavelSelect.replaceChildren(
+    new Option('OUTRO — indicar nome','__outro__'),
+    ...nomes.map(nome => new Option(nome,nome))
+  );
+  responsavelSelect.value = nomes.includes(anterior) ? anterior : '__outro__';
+  actualizarCampoResponsavel();
+}
+function responsavelEscolhido() {
+  return (responsavelSelect.value === '__outro__' ?
+    outroResponsavel.value : responsavelSelect.value).trim();
+}
+function guardarResponsavel(nome) {
+  try {
+    const nomes = [...responsaveisLocais(), nome].map(n => n.trim()).filter(Boolean);
+    localStorage.setItem(RESPONSAVEIS_STORAGE, JSON.stringify(
+      [...new Map(nomes.map(n => [n.toLocaleLowerCase('pt'),n])).values()]
+    ));
+  } catch (error) { console.warn('Não foi possível guardar os responsáveis localmente.',error); }
+  preencherResponsaveis();
+}
+responsavelSelect.addEventListener('change', actualizarCampoResponsavel);
+
 const isActive = item => !item.estado || ['activo','activa','operacional','disponível','disponivel'].includes(normalise(item.estado).toLowerCase());
 
 function setToday() {
@@ -23,6 +77,9 @@ async function loadMasterData() {
     const data = await response.json();
     fillSelect('viaturas', data.viaturas, item => `${item.matricula || item.codigo}${item.modelo ? ` · ${item.modelo}` : ''}`, item => item.matricula || item.codigo);
     fillSelect('postos', data.postos, item => item.nome || item.codigo, item => item.nome || item.codigo);
+    const responsaveis = data.responsaveis || data.responsaveisAbastecimento || data.utilizadores || [];
+    responsaveisMaster = Array.isArray(responsaveis) ? responsaveis : [];
+    preencherResponsaveis();
     const updated = data.actualizadoEm ? new Date(data.actualizadoEm) : new Date();
     document.querySelector('#dataTimestamp').textContent = `Listas actualizadas: ${new Intl.DateTimeFormat('pt-MZ', { dateStyle: 'short', timeStyle: 'short' }).format(updated)}`;
     syncStatus.className = 'sync online';
@@ -78,7 +135,17 @@ form.addEventListener('submit', async event => {
     return;
   }
 
+  const responsavel = responsavelEscolhido();
+  if (!responsavel) {
+    outroResponsavel.classList.add('invalid');
+    outroResponsavel.focus();
+    document.querySelector('#formHint').textContent = 'Indique o responsável pelo abastecimento.';
+    return;
+  }
   const payload = Object.fromEntries(new FormData(form).entries());
+  delete payload.responsavelSeleccao;
+  delete payload.responsavelNovo;
+  payload.Responsavel = responsavel;
   delete payload.ValorTotalDisplay;
   // Valor Total é uma coluna calculada em tbl_abastecimentos (=[@Litros]*[@[Valor Unitario]]).
   // Enviamos o valor calculado também, para o caso de o fluxo do Power Automate precisar dele explicitamente.
@@ -98,6 +165,7 @@ form.addEventListener('submit', async event => {
       entries.push(payload);
       localStorage.setItem('sirAbastecimentoDemo', JSON.stringify(entries));
     }
+    guardarResponsavel(responsavel);
     form.hidden = true;
     successPanel.hidden = false;
     document.querySelector('#successMessage').textContent = config.demoMode ? 'Modo de demonstração: o registo ficou guardado neste dispositivo.' : 'Os dados foram enviados para o sistema com sucesso.';
@@ -111,6 +179,8 @@ form.addEventListener('submit', async event => {
 });
 document.querySelector('#newEntry').addEventListener('click', () => {
   form.reset();
+  outroResponsavel.value = '';
+  preencherResponsaveis();
   setToday();
   form.hidden = false;
   successPanel.hidden = true;
@@ -119,6 +189,7 @@ document.querySelector('#newEntry').addEventListener('click', () => {
   updateProgress();
 });
 
+preencherResponsaveis();
 setToday();
 loadMasterData();
 updateProgress();
