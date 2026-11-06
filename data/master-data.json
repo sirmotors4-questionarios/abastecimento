@@ -1,5 +1,5 @@
 {
-  "actualizadoEm": "2026-11-06T07:50:02.7184177Z",
+  "actualizadoEm": "2026-11-06T08:05:26.3061637Z",
   "viaturas": [
     {
       "codigo": "AOT 435 MC",
@@ -158,5 +158,30 @@
       "estado": ""
     }
   ],
-  "postos": []
+  "postos": [
+    {
+      "nome": "AUTO Gas -  Mozal/ Mozel",
+      "estado": "Activo"
+    },
+    {
+      "nome": "AUTO Gas - EMPTM/ Maputo",
+      "estado": "Activo"
+    },
+    {
+      "nome": "AUTO Gas - ETM/ Maputo province",
+      "estado": "Activo"
+    },
+    {
+      "nome": "Petromoc - Baixa",
+      "estado": "Activo"
+    },
+    {
+      "nome": "Petromoc - MACHAVA/ MACHAVA-Matilda",
+      "estado": "Activo"
+    },
+    {
+      "nome": "Posto GNC FMC Marracuene/ Maputo province",
+      "estado": "Activo"
+    }
+  ]
 }
