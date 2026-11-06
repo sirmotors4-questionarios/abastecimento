@@ -82,3 +82,8 @@ footer { width: min(980px, calc(100% - 32px)); margin: 0 auto 28px; padding-top:
   #submitButton { width: 100%; }
   footer { display: grid; gap: 5px; }
 }
+
+/* ComboBox do responsável com campo condicional, mantendo o layout responsivo. */
+.responsavel-group{min-width:0;display:flex;flex-direction:column;grid-column:1/-1}
+.responsavel-group #outroResponsavelLabel{display:block;margin-top:12px}
+.responsavel-group #outroResponsavelLabel[hidden]{display:none!important}
