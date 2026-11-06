@@ -87,3 +87,7 @@ footer { width: min(980px, calc(100% - 32px)); margin: 0 auto 28px; padding-top:
 .responsavel-group{min-width:0;display:flex;flex-direction:column;grid-column:1/-1}
 .responsavel-group #outroResponsavelLabel{display:block;margin-top:12px}
 .responsavel-group #outroResponsavelLabel[hidden]{display:none!important}
+
+.posto-group{min-width:0;display:flex;flex-direction:column;grid-column:1/-1}
+.posto-group #outroPostoLabel{display:block;margin-top:12px}
+.posto-group #outroPostoLabel[hidden]{display:none!important}
