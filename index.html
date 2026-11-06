@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b5aa8">
   <meta name="description" content="Registo operacional de Abastecimento da SIR Motors.">
   <title>Abastecimento | SIR Motors</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
   <header class="topbar">
@@ -38,6 +38,15 @@
           <label>Data *<input type="date" name="Data" required></label>
           <label>Viatura *<select name="Viatura" data-list="viaturas" required><option value="">A carregar...</option></select></label>
           <label class="wide">Posto de abastecimento *<select name="Posto" data-list="postos" required><option value="">A carregar...</option></select></label>
+          <div class="responsavel-group wide">
+            <label for="responsavelSelect">Responsável pelo abastecimento *</label>
+            <select id="responsavelSelect" name="responsavelSeleccao" required>
+              <option value="__outro__">OUTRO — indicar nome</option>
+            </select>
+            <label id="outroResponsavelLabel" for="outroResponsavel">Indicar outro nome *
+              <input id="outroResponsavel" name="responsavelNovo" type="text" maxlength="120" autocomplete="name" placeholder="Nome de quem regista o abastecimento" required>
+            </label>
+          </div>
         </div>
       </section>
 
@@ -73,6 +82,6 @@
 
   <footer><span>SIR Motors · Operações Rodoviárias</span><span id="dataTimestamp"></span></footer>
   <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>
