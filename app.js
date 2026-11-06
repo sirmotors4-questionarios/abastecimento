@@ -64,14 +64,7 @@ responsavelSelect.addEventListener('change', actualizarCampoResponsavel);
 const postoSelect = document.querySelector('#postoSelect');
 const outroPosto = document.querySelector('#outroPosto');
 const outroPostoLabel = document.querySelector('#outroPostoLabel');
-const POSTOS_STORAGE = 'sirAbastecimentoPostos';
 let postosMaster = [];
-function postosLocais() {
-  try {
-    const result = JSON.parse(localStorage.getItem(POSTOS_STORAGE) || '[]');
-    return Array.isArray(result) ? result.filter(item => typeof item === 'string') : [];
-  } catch { return []; }
-}
 function nomePosto(item) {
   if (typeof item === 'string') return item.trim();
   return String(item?.nome || item?.Nome || item?.Posto || item?.posto || item?.codigo || '').trim();
@@ -87,7 +80,7 @@ function actualizarCampoPosto() {
 function preencherPostos(lista = null) {
   if (Array.isArray(lista)) postosMaster = lista.filter(item => typeof item === 'string' || isActive(item));
   const anterior = postoSelect.value;
-  const postos = [...new Map([...postosMaster, ...postosLocais()]
+  const postos = [...new Map(postosMaster
     .map(nomePosto).filter(nome => nome && nome.toLocaleLowerCase('pt') !== 'outro')
     .map(nome => [nome.toLocaleLowerCase('pt'), nome])).values()]
     .sort((x,y) => x.localeCompare(y,'pt'));
@@ -98,13 +91,6 @@ function preencherPostos(lista = null) {
 }
 function postoEscolhido() {
   return (postoSelect.value === '__outro__' ? outroPosto.value : postoSelect.value).trim();
-}
-function guardarPosto(nome) {
-  try {
-    const postos = [...postosLocais(),nome].map(x=>x.trim()).filter(Boolean);
-    localStorage.setItem(POSTOS_STORAGE,JSON.stringify([...new Map(postos.map(x=>[x.toLocaleLowerCase('pt'),x])).values()]));
-  } catch (error) { console.warn('Não foi possível guardar o posto localmente.',error); }
-  preencherPostos();
 }
 postoSelect.addEventListener('change',actualizarCampoPosto);
 
@@ -224,7 +210,6 @@ form.addEventListener('submit', async event => {
       localStorage.setItem('sirAbastecimentoDemo', JSON.stringify(entries));
     }
     guardarResponsavel(responsavel);
-    guardarPosto(posto);
     form.hidden = true;
     successPanel.hidden = false;
     document.querySelector('#successMessage').textContent = config.demoMode ? 'Modo de demonstração: o registo ficou guardado neste dispositivo.' : 'Os dados foram enviados para o sistema com sucesso.';
