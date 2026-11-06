@@ -114,15 +114,22 @@ function carregarPrecoHistorico() {
   const posto = postoEscolhido();
   const anterior = precosPostos[chavePosto(posto)];
   const ultimo = anterior && Number(anterior.valor)>0 ? Number(anterior.valor).toFixed(2) : '';
-  const valores = [...new Set([...precosDistintos, ...(ultimo ? [ultimo] : [])]
-    .map(v => Number(v)).filter(v => Number.isFinite(v) && v>0).map(v => v.toFixed(2)))]
-    .sort((a,b)=>Number(a)-Number(b));
-  precoSelect.replaceChildren(new Option('OUTRO — indicar preço','__outro__'),
-    ...valores.map(v=>new Option(new Intl.NumberFormat('pt-MZ',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(v))+' MT',v)));
-  precoSelect.value = ultimo || '__outro__';
+  // Último preço do posto em primeiro lugar. Os restantes valores distintos
+  // seguem a ordem de recência enviada pela sincronização. OUTRO fica no fim.
+  const valores = [...new Set([...(ultimo ? [ultimo] : []), ...precosDistintos]
+    .map(v => Number(v)).filter(v => Number.isFinite(v) && v > 0).map(v => v.toFixed(2)))];
+  precoSelect.replaceChildren(
+    ...valores.map(v => new Option(new Intl.NumberFormat('pt-MZ', {
+      minimumFractionDigits: 2, maximumFractionDigits: 2
+    }).format(Number(v)) + ' MT', v)),
+    new Option('OUTRO — indicar preço', '__outro__')
+  );
+  precoSelect.value = valores[0] || '__outro__';
   precoHistorico.textContent = ultimo ?
-    'Último preço deste posto: '+ultimo+' MT/litro (data: '+anterior.data+'). Pode seleccionar outro valor.' :
-    'Sem preço anterior para este posto. Seleccione um preço distinto ou indique OUTRO.';
+    'Último preço deste posto: ' + ultimo + ' MT/litro (data: ' + anterior.data + '). Pode seleccionar outro valor.' :
+    valores.length ?
+      'Sem preço anterior deste posto. Seleccionado o valor mais recente da base de dados; confirme antes de enviar.' :
+      'Ainda não há preços sincronizados do Excel. Utilize OUTRO para indicar o valor.';
   atualizarCampoPreco();
 }
 postoSelect.addEventListener('change', carregarPrecoHistorico);
